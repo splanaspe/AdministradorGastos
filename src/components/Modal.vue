@@ -6,7 +6,7 @@
 
     const error=ref('')
 
-    const emit = defineEmits(['ocultar-modal', 'guardar-gasto','update:nombre', 'update:cantidad', 'update:categoria']);
+    const emit = defineEmits(['ocultar-modal', 'eliminar-gasto', 'guardar-gasto','update:nombre', 'update:cantidad', 'update:categoria']);
 
     const props = defineProps({
         modal: {
@@ -32,12 +32,18 @@
         disponible:{
             type: Number,
             required: true
+        },
+        id: {
+            type: [String, null],
+            required: true
         }
     })
 
+    const oldCantidad = props.cantidad;
+
     const agregarGasto = () => {
         // Validar
-        const {cantidad, categoria, nombre, disponible} = props
+        const {cantidad, categoria, nombre, disponible, id} = props
         if([nombre,cantidad,categoria].includes('')){
             error.value= 'Todos los campos son obligatorios'
             setTimeout( () => {
@@ -55,13 +61,24 @@
         }
         console.log("Tienes disponible: "+disponible)
         //Validar que el usuario no gaste mas de lo disponible
-        if(cantidad > disponible){
-            error.value="Has excedido el presupuesto"
-            setTimeout( () => {
-                error.value=""
-            },2000)
-            return
+        if(id){
+            if(cantidad > oldCantidad + disponible){
+                error.value="Has excedido el presupuesto"
+                setTimeout( () => {
+                    error.value=""
+                },2000)
+                return
+            }
+        } else{
+            if(cantidad > disponible){
+                error.value="Has excedido el presupuesto"
+                setTimeout( () => {
+                    error.value=""
+                },2000)
+                return
+            }
         }
+        
         emit('guardar-gasto')
     }
 
@@ -81,7 +98,9 @@
                 class="nuevo-gasto"
                 @submit.prevent="agregarGasto"
             > 
-                <legend> Añadir Gasto </legend>
+                <Legend>
+                    {{ id ? 'Guardar Cambios' : 'Añadir Gasto' }}
+                </Legend>
                 <Alerta v-if="error"> 
                     {{ error }}
                 </Alerta>
@@ -122,8 +141,18 @@
                     </select>
                 </div>
                 <input type="submit"
-                    value="Añadir Gasto"> 
+                    :value="[id ? 'Guardar Cambios' : 'Añadir Gasto']"
+                > 
             </form>
+
+            <button
+            v-if="id"
+                @click="$emit('eliminar-gasto',id)"
+                type="button"
+                class="btn-eliminar"
+            >
+                Eliminar Gasto
+            </button>
         </div>
     </div>
 </template>
@@ -199,6 +228,18 @@
         background-color: var(--azul);
         color: var(--blanco);
         font-weight: 700;
+        cursor: pointer;
+    }
+
+    .btn-eliminar{
+        border:none; 
+        padding:1rem;
+        width: 100%;
+        background-color: #ef4444;
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: var(--blanco);
+        margin-top: 10rem;
         cursor: pointer;
     }
 
